@@ -1,11 +1,11 @@
 {
-  "name": "my-razzle-app",
+  "name": "express-react-universal-example",
   "version": "0.1.0",
   "license": "MIT",
   "scripts": {
     "start": "razzle start",
     "build": "razzle build",
-    "test": "razzle test --env=jsdom",
+    "test": "npx jest --watchAll",
     "start:prod": "NODE_ENV=production node build/server.js"
   },
   "dependencies": {
@@ -33,34 +33,9 @@
     "eslint-config-prettier": "^6.4.0",
     "eslint-plugin-prettier": "^3.1.1",
     "eslint-plugin-react": "^7.16.0",
+    "jest": "^24.9.0",
     "prettier": "^1.18.2",
+    "supertest": "^4.0.2",
     "typescript": "^3.6.4"
-  },
-  "jest": {
-    "setupFiles": [
-      "<rootDir>/src/tests/setup.ts"
-    ],
-    "moduleFileExtensions": [
-      "js",
-      "jsx",
-      "ts",
-      "tsx"
-    ],
-    "testMatch": [
-      "<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}",
-      "<rootDir>/src/**/*.{test,spec}.{js,jsx,ts,tsx}"
-    ],
-    "transform": {
-      "^.+\\.(js|jsx|ts|tsx)$": "<rootDir>/node_modules/babel-jest",
-      "^.+\\.css$": "<rootDir>/node_modules/razzle/config/jest/cssTransform.js",
-      "^(?!.*\\.(js|jsx|ts|tsx|css|json)$)": "<rootDir>/node_modules/razzle/config/jest/fileTransform.js"
-    }
-  },
-  "babel": {
-    "presets": [
-      "@babel/preset-env",
-      "@babel/preset-typescript",
-      "react-app"
-    ]
   }
 }
