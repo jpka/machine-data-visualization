@@ -1,16 +1,29 @@
 import React from 'react'
-import App from '../client/App'
 import { StaticRouter } from 'react-router-dom'
 import { renderToString } from 'react-dom/server'
+import App from '../client/components/App'
+// import compMetricsSvc from './services/comp-metric.svc'
+import MachineLog from './models/machine-log.model'
 
 const assets = require(process.env.RAZZLE_ASSETS_MANIFEST ||
 	'../../build/assets.json')
 
-export default (req, res) => {
+export default async (req, res) => {
+	// const initialData = { value: { Iavg_A: [] } }
+	const initialData: any = await MachineLog.getTimeRange({
+		deviceid: req.query.deviceid,
+		range: [req.query.start, req.query.end]
+	})
+	// initialData = initialData.map(doc => [
+	// 	doc.timestamp,
+	// 	doc.metrics.get('Iavg_A')
+	// ])
+	// console.log('initial data', JSON.stringify(initialData))
+	console.log('initial data', initialData)
 	const context: any = {}
 	const markup = renderToString(
 		<StaticRouter context={context} location={req.url}>
-			<App />
+			<App initialData={initialData} />
 		</StaticRouter>
 	)
 
@@ -35,6 +48,7 @@ export default (req, res) => {
 								? `<script src="${assets.client.js}" defer></script>`
 								: `<script src="${assets.client.js}" defer crossorigin></script>`
 						}
+						<script>window.initialData = ${JSON.stringify(initialData)}</script>
 				</head>
 				<body>
 						<div id="root">${markup}</div>
