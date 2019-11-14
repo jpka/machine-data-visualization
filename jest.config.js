@@ -20,6 +20,7 @@ module.exports = {
 			testEnvironment: 'jsdom'
 		}),
 		Object.assign(baseConfig('server'), {
+			setupFilesAfterEnv: ['<rootDir>/src/server/tests/setup.ts'],
 			displayName: 'server',
 			testEnvironment: 'node'
 		}),
