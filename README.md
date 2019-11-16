@@ -2,12 +2,14 @@
 
 Navigating to the root will show the default view, if you want to include more metrics, you can specify in the query parameters (e.g: http://localhost:3000/?metrics=Iavg_A,Q1,P3)
 
+You can zoom in by selecting a range with the mouse or by entering the dates in the input boxes on the top right.
+
 When the fetched points for the graph exceed a certain amount (1500), it will downsample using a LTTB algorithm, but every time you zoom in or out it will fetch data from the server again, and if the range is small enough you will see the actual data points. 
 
 Color sections on the default graph:
-yellow -> unloaded
-orange -> idle
-red -> loaded
+- yellow -> unloaded
+- orange -> idle
+- red -> loaded
 
 ## Setup and development
 
