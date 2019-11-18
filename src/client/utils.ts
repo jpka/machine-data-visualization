@@ -16,3 +16,8 @@ export const fetchMetrics = ({
 			params: { metrics: metrics.join(','), ...otherParams }
 		})
 		.then(({ data }) => data)
+
+export const queryParams: any =
+	typeof window !== 'undefined'
+		? new URLSearchParams(window.location.search)
+		: { get: () => undefined }

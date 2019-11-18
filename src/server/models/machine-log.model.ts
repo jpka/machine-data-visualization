@@ -1,7 +1,6 @@
 import mongoose, { Schema, Document, Model, DocumentQuery } from 'mongoose'
 import { toDate } from '../utils'
 import lttbDownsampler from 'downsample-lttb'
-// import { downsampleSeries } from '../../../build/main.06084ef4380cc44fcb5a.hot-update'
 
 export interface MachineLogDocument extends Document {
 	timestamp: Date
@@ -26,63 +25,108 @@ const schema = new Schema({
 	metrics: { type: Map, of: Number }
 })
 
-const groupLogs = (logs: MachineLogDocument[]) => ({
-	groups: logs.reduce(
-		(groups, { timestamp, metrics }) => {
-			let group = groups[groups.length - 1]
+const groupLogs = ({ unloadedLimit = 1, idleLimit = 30 }) => (
+	logs: MachineLogDocument[]
+) => {
+	const groupTypes: [string, number?][] = [
+		//@ts-ignore
+		['unloaded', parseInt(unloadedLimit)],
+		//@ts-ignore
+		['idle', parseInt(idleLimit)],
+		['loaded']
+	]
 
-			if (
-				group.length > 0 &&
-				timestamp.getTime() - group[group.length - 1][0].getTime() > 60000
-			) {
-				group = []
-				groups.push(group)
+	const getGroupType = metrics => {
+		for (const [type, boundary] of groupTypes) {
+			if (!boundary || metrics.get('Iavg_A') <= boundary) return type
+		}
+	}
+
+	const groups: any[] = []
+	let group: any = null
+	let subgroup: any = null
+
+	logs.forEach(({ timestamp, metrics }, i) => {
+		const groupType = getGroupType(metrics)
+		const previousTime = i > 0 ? logs[i - 1].timestamp.getTime() : undefined
+		const thisTime = timestamp.getTime()
+
+		// if no current group or last log was over a minute ago create a new group
+		if (!group || (previousTime && thisTime - previousTime > 60000)) {
+			// close current group
+			if (group) {
+				group.end = previousTime
 			}
-			group.push([timestamp, metrics])
+			// close current subgroup
+			if (subgroup) {
+				subgroup.end = previousTime
+				subgroup = null
+			}
+			group = { start: thisTime, logs: [], subGroups: [] }
+			groups.push(group)
+		}
+		if (
+			!subgroup || // if there is no subgroup
+			groupType !== subgroup.type // or this record's group is different than previous
+		) {
+			if (subgroup) {
+				// close current group, if any
+				subgroup.end = previousTime
+			}
+			// and create a new one, with current timestamp as starting boundary
+			subgroup = { type: groupType, start: thisTime }
+			if (group.subGroups) group.subGroups.push(subgroup)
+		}
+		group.logs.push([thisTime, metrics])
+	})
+	const lastTimestamp = logs[logs.length - 1].timestamp.getTime()
+	// close the last subgroup
+	if (subgroup) subgroup.end = lastTimestamp
+	// close the last group
+	if (group) group.end = lastTimestamp
 
-			return groups
-		},
-		[[]] as [MachineLogDocument['timestamp'], MachineLogDocument['metrics']][][]
-	),
-	logsTotal: logs.length
-})
+	return {
+		groups,
+		logsTotal: logs.length
+	}
+}
 
 export const downsampleSeries = (targetPoints: number) => ({
 	groups,
 	logsTotal
 }: {
-	groups: [MachineLogDocument['timestamp'], MachineLogDocument['metrics']][][]
+	groups: { logs: [Date, MachineLogDocument['metrics']][]; subGroups }[]
 	logsTotal: number
 }) => {
 	if (logsTotal <= 1500) return groups
 
-	return groups.map(group => {
-		const metrics = Array.from(group[0][1].keys())
+	return groups.map(({ logs, ...group }) => {
+		const metrics = Array.from(logs[0][1].keys())
 
-		return metrics.reduce(
-			(
-				acc: [MachineLogDocument['timestamp'], { [key: string]: number }][],
-				metric: string
-			) => {
-				const metricSeries = group.map(([timestamp, metrics]) => [
-					timestamp,
-					metrics.get(metric)
-				])
-				const downsampled = lttbDownsampler.processData(
-					metricSeries,
-					//@ts-ignore
-					parseInt((targetPoints * group.length) / logsTotal)
-				)
-				downsampled.forEach(([timestamp, value], i) => {
-					if (acc.length < i + 1) acc.push([timestamp.getTime(), {}])
-					// acc[i][1].set(metric, value)
-					acc[i][1][metric] = value
-				})
+		return {
+			...group,
+			logs: metrics.reduce(
+				(acc: [Date, { [key: string]: number }][], metric: string) => {
+					const metricSeries = logs.map(([timestamp, metrics]) => [
+						timestamp,
+						metrics.get(metric)
+					])
+					const downsampled = lttbDownsampler.processData(
+						metricSeries,
+						//@ts-ignore
+						parseInt((targetPoints * logs.length) / logsTotal)
+					)
+					downsampled.forEach(([timestamp, value], i) => {
+						if (acc.length < i + 1) acc.push([timestamp, {}])
+						// acc[i][1].set(metric, value)
+						acc[i][1][metric] = value
+					})
 
-				return acc
-			},
-			[]
-		)
+					return acc
+				},
+				[]
+			)
+		}
 	})
 }
 
@@ -96,7 +140,12 @@ type GetTimeRangeProps = {
 
 export interface GetTimeRangeResponse {
 	metrics: string[]
-	groups: MachineLogTuple[]
+	groups: {
+		start: number
+		end: number
+		logs: MachineLogTuple[]
+		subGroups: { start: number; end: number; type: string }[]
+	}[]
 }
 
 schema.statics.getTimeRange = function(
@@ -106,6 +155,8 @@ schema.statics.getTimeRange = function(
 		end,
 		metrics,
 		downsampleTarget = 500,
+		unloadedLimit,
+		idleLimit,
 		...otherParams
 	}: GetTimeRangeProps
 ) {
@@ -140,7 +191,7 @@ schema.statics.getTimeRange = function(
 			timestamp: 1
 		})
 		.exec()
-		.then(groupLogs)
+		.then(groupLogs({ unloadedLimit, idleLimit }))
 		.then(downsampleSeries(downsampleTarget))
 		.then(groups => ({ groups, metrics }))
 }

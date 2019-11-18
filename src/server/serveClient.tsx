@@ -7,16 +7,15 @@ const assets = require(process.env.RAZZLE_ASSETS_MANIFEST ||
 	'../../build/assets.json')
 
 export default async (req, res) => {
-	// const initialData: any = await MachineLogGroup.getPopulatedGroups({
 	const initialData: any = await MachineLog.getTimeRange({
-		// deviceid: req.query.deviceid,
-		metrics: req.query.metrics ? req.query.metrics.split(',') : ['Iavg_A']
-		// start: req.query.start,
-		// end: req.query.end
+		metrics: req.query.metrics ? req.query.metrics.split(',') : ['Iavg_A'],
+		start: req.query.start,
+		end: req.query.end,
+		unloadedLimit: req.query.unloadedLimit,
+		idleLimit: req.query.idleLimit
 	})
-	// const markup = renderToString(<App initialData={initialData} />)
-	// const initialData = { groups: [] }
-	const markup = ''
+	const markup = renderToString(<App initialData={initialData} />)
+	// const markup = ''
 
 	res.status(200).send(
 		`<!doctype html>

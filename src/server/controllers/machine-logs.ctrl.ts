@@ -6,12 +6,13 @@ const handleError = (err, res) => res.status(500).send({ message: err.message })
 export default Router().get('/', async (req: any, res) => {
 	try {
 		const result = await MachineLog.getTimeRange({
-			metrics: req.query.metrics.split(','),
+			metrics: req.query.metrics && req.query.metrics.split(','),
 			start: req.query.start,
 			end: req.query.end
 		})
 		res.status(200).send(result)
 	} catch (err) {
+		console.error(err)
 		handleError(err, res)
 	}
 })

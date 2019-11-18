@@ -78,43 +78,56 @@ const metricList = [
 	'Psum_kW'
 ]
 
-const Reference: FC<{
+const Controls: FC<{
 	metrics: MetricsOpts
 	setMetricsState: (any) => any
 }> = ({ metrics, setMetricsState }) => {
 	return (
 		<div style={{ border: '3px solid black', padding: '5px' }}>
-			{/* <p>{time.toLocaleString()}</p> */}
 			<ul style={{ marginBlockStart: 0, padding: 0 }}>
+				<li className="row" style={{ marginBottom: '3px' }}>
+					<span className="column" style={{ fontWeight: 'bold' }}>
+						Metric
+					</span>
+					<span className="column" style={{ fontWeight: 'bold' }}>
+						Tooltip
+					</span>
+					<span className="column" style={{ fontWeight: 'bold' }}>
+						Plot
+					</span>
+				</li>
 				{metricList.map(metric => (
-					<li key={metric} style={{ display: 'flex' }}>
-						<span>
-							<span style={{ fontWeight: 'bold', margin: '0 5px' }}>
-								{metric}
-							</span>
-							{/* <input
-								type="checkbox"
-								checked={metrics[metric] && metrics[metric].show}
-								onChange={e =>
-									setMetricsState({
-										...metrics,
-										[metric]: { ...metrics[metric], show: e.target.checked }
-									})
-								}
-							></input> */}
-							<input
-								type="checkbox"
-								checked={metrics[metric] && metrics[metric].graph}
-								onChange={e =>
-									setMetricsState({
-										...metrics,
-										[metric]: { ...metrics[metric], graph: e.target.checked }
-									})
-								}
-							></input>
+					<li key={metric} style={{ display: 'flex' }} className="row">
+						<span
+							className="column"
+							style={{
+								margin: '0 5px'
+							}}
+						>
+							{metric}
 						</span>
-
-						{/* <span>{metrics[metric].toFixed(3)}</span> */}
+						<input
+							className="column"
+							type="checkbox"
+							checked={metrics[metric] && metrics[metric].show}
+							onChange={e =>
+								setMetricsState({
+									...metrics,
+									[metric]: { ...metrics[metric], show: e.target.checked }
+								})
+							}
+						></input>
+						<input
+							className="column"
+							type="checkbox"
+							checked={metrics[metric] && metrics[metric].graph}
+							onChange={e =>
+								setMetricsState({
+									...metrics,
+									[metric]: { ...metrics[metric], graph: e.target.checked }
+								})
+							}
+						></input>
 					</li>
 				))}
 			</ul>
@@ -122,4 +135,4 @@ const Reference: FC<{
 	)
 }
 
-export default Reference
+export default Controls

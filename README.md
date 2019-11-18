@@ -1,6 +1,6 @@
 ## Usage
 
-Navigating to the root will show the default view, if you want to include more metrics, you can specify in the query parameters (e.g: http://localhost:3000/?metrics=Iavg_A,Q1,P3)
+Navigating to the root will show the default view, if you want to include more metrics, you can specify in the query parameters (e.g: http://localhost:3000/?metrics=Iavg_A,Q1,P3) or tick the checkboxes on the right. When checking either "tooltip" or "plot" the app will fetch the relevant metrics for the current time range, downsampled if large enough. "Plot" is self-explanatory, "Tooltip" will include the values for that metric in the top left tooltip/overlay when hovering over points on the currently graphed metrics.
 
 You can zoom in by selecting a range with the mouse or by entering the dates in the input boxes on the top right.
 
@@ -11,7 +11,9 @@ Color sections on the default graph:
 - orange -> idle
 - red -> loaded
 
-## Setup and development
+Currently it starts marking as idle when Iavg_A > 1 and marking as loaded when > 30 but in case I got that wrong (specially I'm not sure about the upper idle limit) you can change the limits via query parameters, like so: http://localhost:3000/?idleLimit=80 
+
+## Setup
 
 ### `npm install` or `yarn`
 

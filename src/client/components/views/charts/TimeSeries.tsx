@@ -1,17 +1,16 @@
-import React, { FC } from 'react'
+import React, { FC, createRef } from 'react'
 import Highcharts from 'highcharts/highstock'
 import HighchartsReact from 'highcharts-react-official'
 import { MetricsOpts } from '../../App'
-import { getActiveMetrics, fetchMetrics } from '../../../utils'
-import {
-	MachineLogTuple,
-	GetTimeRangeResponse
-} from '../../../../server/models/machine-log.model'
+import { MachineLogTuple } from '../../../../server/models/machine-log.model'
+import { queryParams } from '../../../utils'
+
+console.log(queryParams.get('idleLimit'))
 
 // data comes in groups of continuous data. we need to insert null points in between
 // for highcharts to show the gap
 const processLogGroups = (
-	groupedLogs: GetTimeRangeResponse['groups']
+	groupedLogs: MachineLogTuple[][]
 ): MachineLogTuple[] =>
 	groupedLogs.reduce(
 		(acc, logs: any) =>
@@ -26,49 +25,61 @@ const extractSingleMetricSeries = (logs, metric: string) =>
 	])
 
 const TimeSeriesChart: FC<{
-	data: GetTimeRangeResponse['groups']
-	// metrics: MetricsOpts
-	metrics: string[]
-}> = ({ data, metrics }) => {
+	data: MachineLogTuple[][]
+	metrics: MetricsOpts
+	setRange: ([min, max]) => any
+}> = ({ data, metrics, setRange }) => {
 	// don't render in server
 	if (typeof window === 'undefined') return <div></div>
 
+	const chartRef = createRef()
 	let currentExtremes
 
 	const processedLogs = processLogGroups(data)
 
-	const graphedData = metrics.map(metric => ({
-		name: metric,
-		data: extractSingleMetricSeries(processedLogs, metric),
-		type: 'line',
-		connectNulls: false,
-		zones:
-			metric === 'Iavg_A'
-				? [
-						{
-							// unloaded
-							value: 1.5,
-							color: 'yellow'
-						},
-						{
-							// idle
-							value: 30,
-							color: 'orange'
-						},
-						{
-							// loaded
-							color: 'red'
-						}
-				  ]
-				: undefined
-	}))
+	const graphedData = Object.keys(metrics)
+		.filter(m => metrics[m].graph)
+		.map(metric => ({
+			name: metric,
+			data: extractSingleMetricSeries(processedLogs, metric),
+			type: 'line',
+			connectNulls: false,
+			zones:
+				metric === 'Iavg_A'
+					? [
+							{
+								// unloaded
+								value: parseInt(queryParams.get('unloadedLimit')) || 1.5,
+								color: 'yellow'
+							},
+							{
+								// idle
+								value: parseInt(queryParams.get('idleLimit')) || 30,
+								color: 'orange'
+							},
+							{
+								// loaded
+								color: 'red'
+							}
+					  ]
+					: undefined
+		}))
 
 	return (
 		<HighchartsReact
+			//@ts-ignore
+			ref={chartRef}
 			highcharts={Highcharts}
 			constructorType={'stockChart'}
+			containerProps={{
+				id: 'time-series-chart',
+				'data-testid': 'time-series-chart'
+			}}
 			//@ts-ignore
 			options={{
+				title: {
+					text: 'Average current'
+				},
 				chart: {
 					zoomType: 'x',
 					events: {
@@ -83,29 +94,12 @@ const TimeSeriesChart: FC<{
 					ordinal: false,
 					events: {
 						afterSetExtremes: async function(e) {
-							// check that the extremes actually changed, abort otherwise
 							if (
-								e.min === currentExtremes.min &&
-								e.max === currentExtremes.max
+								currentExtremes &&
+								(e.min !== currentExtremes.min || e.max !== currentExtremes.max)
 							) {
-								return
+								setRange([e.min, e.max])
 							}
-							//@ts-ignore
-							currentExtremes = e
-							console.log('aftersetextremes', e)
-							const newData = await fetchMetrics({
-								metrics: getActiveMetrics(metrics),
-								start: Math.round(e.min),
-								end: Math.round(e.max)
-							})
-							console.log('fetched data', newData)
-							//@ts-ignore
-							const processed = processLogGroups(newData.groups)
-							this.series.forEach(series => {
-								series.setData(
-									extractSingleMetricSeries(processed, series.name)
-								)
-							})
 						}
 					}
 				},
@@ -121,39 +115,51 @@ const TimeSeriesChart: FC<{
 						connectNulls: false,
 						dataGrouping: {
 							enabled: false
-						}
-						// point: {
-						// 	events: {
-						// 		mouseOver: function() {
-						// 			const chart: Highcharts.Chart & {
-						// 				lbl?: Highcharts.SVGElement
-						// 			} = this.series.chart
+						},
+						point: {
+							events: {
+								mouseOver: function(e) {
+									const chart: Highcharts.Chart & {
+										lbl?: Highcharts.SVGElement
+									} = this.series.chart
 
-						// 			if (!chart.lbl) {
-						// 				chart.lbl = chart.renderer
-						// 					//@ts-ignore
-						// 					.label('')
-						// 					.attr({
-						// 						padding: 10,
-						// 						r: 10,
-						// 						//@ts-ignore
-						// 						fill: Highcharts.getOptions().colors[1]
-						// 					})
-						// 					.css({
-						// 						color: '#FFFFFF'
-						// 					})
-						// 					.add()
-						// 			}
-						// 			//@ts-ignore
-						// 			chart.lbl.show().attr({
-						// 				text: Object.keys(metrics)
-						// 					.filter(metric => metrics[metric].show)
-						// 					.map(metric => `${metric}`)
-						// 					.join(',\n')
-						// 			})
-						// 		}
-						// 	}
-						// }
+									if (!chart.lbl) {
+										chart.lbl = chart.renderer
+											//@ts-ignore
+											.label('')
+											.attr({
+												padding: 10,
+												r: 10,
+												//@ts-ignore
+												fill: Highcharts.getOptions().colors[1]
+											})
+											.css({
+												color: '#FFFFFF'
+											})
+											.add()
+											.hide()
+									}
+									//@ts-ignore
+									const point = processedLogs.find(l => l[0] === e.target.x)
+									if (!point) return
+									const values = point[1]
+									//@ts-ignore
+									chart.lbl.show().attr({
+										text: Object.keys(metrics)
+											.filter(metric => metrics[metric].show)
+											.map(
+												metric =>
+													`${metric}: ${
+														values.hasOwnProperty(metric)
+															? values[metric]
+															: 'null'
+													}`
+											)
+											.join(', ')
+									})
+								}
+							}
+						}
 					}
 				},
 
@@ -164,29 +170,31 @@ const TimeSeriesChart: FC<{
 				rangeSelector: {
 					buttons: [
 						{
-							type: 'hour',
-							count: 1,
-							text: '1h'
-						},
-						{
-							type: 'day',
-							count: 1,
-							text: '1d'
-						},
-						{
-							type: 'all',
-							text: 'All'
+							text: 'Reset',
+							events: {
+								click: function() {
+									//@ts-ignore
+									const chart = chartRef.current.chart
+									setTimeout(() => {
+										const initialGroups = window['initialData'].groups
+										chart.xAxis[0].setExtremes(
+											initialGroups[0].start,
+											initialGroups[initialGroups.length - 1].end
+										)
+									}, 1)
+								}
+							}
 						}
 					],
-					// inputEnabled: false, // it supports only days
-					selected: 3 // all
+					inputEnabled: true // it supports only days
 				},
 
 				scrollbar: {
-					liveRedraw: false
+					enabled: false
 				},
 
 				navigator: {
+					enabled: false,
 					adaptToUpdatedData: false
 				},
 
