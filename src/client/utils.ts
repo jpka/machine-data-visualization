@@ -7,17 +7,23 @@ export const getActiveMetrics = (metrics: MetricsOpts) =>
 		metric => metrics[metric].show || metrics[metric].graph
 	)
 
-export const fetchMetrics = ({
-	metrics = [] as string[],
-	...otherParams
-}): Promise<GetTimeRangeResponse> =>
-	axios
-		.get('/api/machine-logs', {
-			params: { metrics: metrics.join(','), ...otherParams }
-		})
-		.then(({ data }) => data)
-
 export const queryParams: any =
 	typeof window !== 'undefined'
 		? new URLSearchParams(window.location.search)
 		: { get: () => undefined }
+
+export const fetchMetrics = ({
+	metrics = [] as string[],
+	...otherParams
+}): Promise<GetTimeRangeResponse> => {
+	const params = { metrics: metrics.join(',') }
+	queryParams.forEach((value, key) => {
+		params[key] = value
+	})
+
+	return axios
+		.get('/api/machine-logs', {
+			params: { ...params, ...otherParams }
+		})
+		.then(({ data }) => data)
+}

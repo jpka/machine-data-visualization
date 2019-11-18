@@ -18,6 +18,9 @@ const GanttChart: FC<{ data: any[] }> = ({ data }) => {
 			}}
 			//@ts-ignore
 			options={{
+				// chart: {
+				// 	zoomType: 'x'
+				// },
 				yAxis: {
 					visible: false,
 					uniqueNames: true,
@@ -28,7 +31,12 @@ const GanttChart: FC<{ data: any[] }> = ({ data }) => {
 				},
 				plotOptions: {
 					series: {
-						turboThreshold: 5000
+						turboThreshold: 5000,
+						//@ts-ignore
+						groupPadding: 0,
+						pointPadding: 0,
+						borderWidth: 0,
+						pointPlacement: 0
 					}
 				},
 				series: [

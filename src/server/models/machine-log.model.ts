@@ -71,7 +71,7 @@ const groupLogs = ({ unloadedLimit = 1, idleLimit = 30 }) => (
 		) {
 			if (subgroup) {
 				// close current group, if any
-				subgroup.end = previousTime
+				subgroup.end = thisTime
 			}
 			// and create a new one, with current timestamp as starting boundary
 			subgroup = { type: groupType, start: thisTime }

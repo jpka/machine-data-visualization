@@ -13,6 +13,8 @@ Color sections on the default graph:
 
 Currently it starts marking as idle when Iavg_A > 1 and marking as loaded when > 30 but in case I got that wrong (specially I'm not sure about the upper idle limit) you can change the limits via query parameters, like so: http://localhost:3000/?idleLimit=80 
 
+The gantt chart at the bottom reflects the state changes of the machine over time at the zoom level of the timeseries above. Note that when a state group is too thin (as in one or a couple of points wide maybe) and the view is too zoomed out, the chart will display a blank space. Not sure how to solve this with the graph library I am using (highcharts).
+
 ## Setup
 
 ### `npm install` or `yarn`
