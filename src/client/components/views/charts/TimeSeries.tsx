@@ -5,8 +5,6 @@ import { MetricsOpts } from '../../App'
 import { MachineLogTuple } from '../../../../server/models/machine-log.model'
 import { queryParams } from '../../../utils'
 
-console.log(queryParams.get('idleLimit'))
-
 // data comes in groups of continuous data. we need to insert null points in between
 // for highcharts to show the gap
 const processLogGroups = (

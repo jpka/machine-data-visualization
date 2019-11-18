@@ -10,6 +10,7 @@ const GanttChart: FC<{ data: any[] }> = ({ data }) => {
 
 	return (
 		<HighchartsReact
+			immutable={true}
 			highcharts={Highcharts}
 			constructorType={'ganttChart'}
 			containerProps={{

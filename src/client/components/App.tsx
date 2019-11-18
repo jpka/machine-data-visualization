@@ -61,7 +61,7 @@ const App: FC<{ initialData?: GetTimeRangeResponse }> = ({
 					setRange={setRange}
 					metrics={metrics}
 				/>
-				{/* <GanttChart data={data.groups.map(({ subGroups }) => subGroups)} /> */}
+				<GanttChart data={data.groups.map(({ subGroups }) => subGroups)} />
 			</span>
 			<Controls metrics={metrics} setMetricsState={setMetricsState} />
 		</div>
