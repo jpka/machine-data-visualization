@@ -21,7 +21,7 @@ The gantt chart at the bottom reflects the state changes of the machine over tim
 
 Installs all dependencies
 
-### `npm yarn seed`
+### `npm run seed` or `yarn seed`
 
 Will seed the database. The project uses mongodb, set the MONGO_URI environment variable via a `.env` file or otherwise prior to running this
 
