@@ -1,4 +1,4 @@
-import React, { FC, createRef } from 'react'
+import React, { FC, createRef, Fragment } from 'react'
 import Highcharts from 'highcharts/highstock'
 import HighchartsReact from 'highcharts-react-official'
 import { MetricsOpts } from '../../App'
@@ -63,142 +63,139 @@ const TimeSeriesChart: FC<{
 					: undefined
 		}))
 
+	const resetZoom = () => {
+		//@ts-ignore
+		const chart = chartRef.current.chart
+		const initialGroups = window['initialData'].groups
+		chart.xAxis[0].setExtremes(
+			initialGroups[0].start,
+			initialGroups[initialGroups.length - 1].end
+		)
+	}
+
 	return (
-		<HighchartsReact
-			//@ts-ignore
-			ref={chartRef}
-			highcharts={Highcharts}
-			constructorType={'stockChart'}
-			containerProps={{
-				id: 'time-series-chart',
-				'data-testid': 'time-series-chart'
-			}}
-			//@ts-ignore
-			options={{
-				title: {
-					text: 'Average current'
-				},
-				chart: {
-					zoomType: 'x',
-					events: {
-						load: function() {
-							currentExtremes = this.xAxis[0].getExtremes()
-						}
-					}
-				},
-				xAxis: {
-					crosshair: true,
-					type: 'datetime',
-					ordinal: false,
-					events: {
-						afterSetExtremes: async function(e) {
-							if (
-								currentExtremes &&
-								(e.min !== currentExtremes.min || e.max !== currentExtremes.max)
-							) {
-								setRange([e.min, e.max])
+		<Fragment>
+			<button onClick={resetZoom}>Reset zoom</button>
+			<HighchartsReact
+				//@ts-ignore
+				ref={chartRef}
+				highcharts={Highcharts}
+				constructorType={'stockChart'}
+				containerProps={{
+					id: 'time-series-chart',
+					'data-testid': 'time-series-chart'
+				}}
+				//@ts-ignore
+				options={{
+					title: {
+						text: 'Average current'
+					},
+					chart: {
+						zoomType: 'x',
+						events: {
+							load: function() {
+								currentExtremes = this.xAxis[0].getExtremes()
 							}
 						}
-					}
-				},
-				yAxis: {
-					crosshair: true,
-					startOnTick: false
-				},
-				legend: {
-					enabled: false
-				},
-				plotOptions: {
-					series: {
-						connectNulls: false,
-						dataGrouping: {
-							enabled: false
-						},
-						point: {
-							events: {
-								mouseOver: function(e) {
-									const chart: Highcharts.Chart & {
-										lbl?: Highcharts.SVGElement
-									} = this.series.chart
+					},
+					xAxis: {
+						crosshair: true,
+						type: 'datetime',
+						ordinal: false,
+						events: {
+							afterSetExtremes: async function(e) {
+								if (
+									currentExtremes &&
+									(e.min !== currentExtremes.min ||
+										e.max !== currentExtremes.max)
+								) {
+									setRange([e.min, e.max])
+								}
+							}
+						}
+					},
+					yAxis: {
+						crosshair: true,
+						startOnTick: false
+					},
+					legend: {
+						enabled: false
+					},
+					plotOptions: {
+						series: {
+							connectNulls: false,
+							dataGrouping: {
+								enabled: false
+							},
+							point: {
+								events: {
+									mouseOver: function(e) {
+										const chart: Highcharts.Chart & {
+											lbl?: Highcharts.SVGElement
+										} = this.series.chart
 
-									if (!chart.lbl) {
-										chart.lbl = chart.renderer
-											//@ts-ignore
-											.label('')
-											.attr({
-												padding: 10,
-												r: 10,
+										if (!chart.lbl) {
+											chart.lbl = chart.renderer
 												//@ts-ignore
-												fill: Highcharts.getOptions().colors[1]
-											})
-											.css({
-												color: '#FFFFFF'
-											})
-											.add()
-											.hide()
+												.label('')
+												.attr({
+													padding: 10,
+													r: 10,
+													//@ts-ignore
+													fill: Highcharts.getOptions().colors[1]
+												})
+												.css({
+													color: '#FFFFFF'
+												})
+												.add()
+												.hide()
+										}
+										//@ts-ignore
+										const point = processedLogs.find(l => l[0] === e.target.x)
+										if (!point) return
+										const values = point[1]
+										//@ts-ignore
+										chart.lbl.show().attr({
+											text: Object.keys(metrics)
+												.filter(metric => metrics[metric].show)
+												.map(
+													metric =>
+														`${metric}: ${
+															values.hasOwnProperty(metric)
+																? values[metric]
+																: 'null'
+														}`
+												)
+												.join(', ')
+										})
 									}
-									//@ts-ignore
-									const point = processedLogs.find(l => l[0] === e.target.x)
-									if (!point) return
-									const values = point[1]
-									//@ts-ignore
-									chart.lbl.show().attr({
-										text: Object.keys(metrics)
-											.filter(metric => metrics[metric].show)
-											.map(
-												metric =>
-													`${metric}: ${
-														values.hasOwnProperty(metric)
-															? values[metric]
-															: 'null'
-													}`
-											)
-											.join(', ')
-									})
 								}
 							}
 						}
-					}
-				},
+					},
 
-				tooltip: {
-					enabled: true
-				},
+					tooltip: {
+						enabled: true
+					},
 
-				rangeSelector: {
-					buttons: [
-						{
-							text: 'Reset',
-							events: {
-								click: function() {
-									//@ts-ignore
-									const chart = chartRef.current.chart
-									setTimeout(() => {
-										const initialGroups = window['initialData'].groups
-										chart.xAxis[0].setExtremes(
-											initialGroups[0].start,
-											initialGroups[initialGroups.length - 1].end
-										)
-									}, 1)
-								}
-							}
-						}
-					],
-					inputEnabled: true // it supports only days
-				},
+					rangeSelector: {
+						buttons: [],
+						inputEnabled: true // it supports only days
+					},
 
-				scrollbar: {
-					enabled: false
-				},
+					scrollbar: {
+						enabled: false
+					},
 
-				navigator: {
-					enabled: false,
-					adaptToUpdatedData: false
-				},
+					navigator: {
+						enabled: false,
+						adaptToUpdatedData: false
+					},
 
-				series: graphedData
-			}}
-		/>
+					series: graphedData
+				}}
+			/>
+		</Fragment>
 	)
 }
 
