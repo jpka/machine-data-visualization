@@ -8,6 +8,7 @@
     "test": "yarn run jest",
     "start:prod": "NODE_ENV=production node build/server.js",
     "seed": "yarn run ts-node scripts/seed-db.ts",
+    "groupLogs": "yarn run ts-node scripts/create-groups.ts",
     "start:debug": "razzle start -- --inspect"
   },
   "dependencies": {
