@@ -17,7 +17,7 @@
     "highcharts": "^7.2.1",
     "highcharts-react-official": "^2.2.2",
     "lodash": "^4.17.15",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "mongodb-memory-server": "^6.0.1",
     "mongoose": "^5.7.8",
     "razzle": "^3.0.0",
